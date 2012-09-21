@@ -22,7 +22,7 @@ else: # we're debugging
 
 @app.route('/')
 def index():
-    return 'Good News Everyone!'
+    return 'Even Gooder News Everyone!'
 
 if __name__ == '__main__':
     app.run(debug=True)
