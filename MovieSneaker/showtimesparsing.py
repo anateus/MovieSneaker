@@ -2,8 +2,6 @@ import lxml.html as html
 import datetime
 import re
 
-# TODO: Refactor this shitshow. Just use functions
-
 #Here's the format we expect this to return:
 #	{ 'theatres': [
 #			{'name':<theater name str>, 'address':<address str>, 'movies': [
