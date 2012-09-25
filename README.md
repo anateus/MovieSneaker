@@ -3,8 +3,6 @@
 ## Mike K, echo 'hlgzqrf@tflca.ipf'|tr gbsoikxramnueqyjflvwhcpzdt tdzpchwvlfjyqeunmarxkiosbg
 
 # About
-http://kuler.adobe.com/#themeID/1492970
+Shoes with movies in them.
 
-### TODO:
-* 
-
+This finds contiguous chains of movies for you to watch.

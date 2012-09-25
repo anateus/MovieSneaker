@@ -7,9 +7,10 @@ db = SQLAlchemy(app)
 class Zipcode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     zipcode = db.Column(db.String(60), unique=True)
+
 class Movie(db.Model):
     name = db.Column(db.String(256))
-    runtime = models.IntegerField() # in minutes
+    runtime = db.Column(db.Integer) # in minutes
     description = db.Column(db.String(512))
     notes = db.Column(db.String(1024))
 
