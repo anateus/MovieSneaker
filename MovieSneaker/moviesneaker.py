@@ -1,6 +1,7 @@
 from flask import Flask, request, session, Response, render_template, json
 from redis import Redis, from_url as redis_from_url
 from flask.ext.sqlalchemy import SQLAlchemy
+from flask.ext.cache import Cache
 
 from datetime import datetime, timedelta
 import dateutil
@@ -33,6 +34,11 @@ if env:
 else: # we're debugging
     redis = Redis()
 
+rp = redis.connection_pool.connection_kwargs
+cache = Cache(app,config={'CACHE_TYPE':'redis',
+                          'CACHE_REDIS_HOST':rp.get('host'),
+                          'CACHE_REDIS_POST':rp.get('port'),
+                          'CACHE_REDIS_PASSWORD':rp.get('password')})
 ### Various utilities I'll break out later
 
 class SchemaEncoder(json.JSONEncoder):
@@ -66,6 +72,9 @@ def jsonify(payload,cls=SchemaEncoder):
 def index():
     return 'Even Gooder News Everyone!'
 
+def get_venues(zipcode):
+    return Venue.query.join(Venue.zipcodes).filter(Zipcode.zipcode==zipcode.strip()).all()
+
 
 @app.route('/venues', defaults={'venue':None,'chains':None})
 @app.route('/venues/<venue>',defaults={'chains':None})
@@ -83,7 +92,10 @@ def venues(venue,chains):
     else:
         zipcode = request.args.get('zipcode')
         if zipcode:
-            matching_venues = Venue.query.join(Venue.zipcodes).filter(Zipcode.zipcode==zipcode.strip()).all()
+            matching_venues = get_venues(zipcode)
+            if not matching_venues:
+                matching_venues = get_showtimes_parse(zipcode)
+
             response = { 'venues' : matching_venues }
         else:
             matching_venues = Venue.query.all()
@@ -91,9 +103,31 @@ def venues(venue,chains):
 
     return jsonify(response)
 
+def get_showtimes_parse(zipcode):
+    zip_object = get_or_create(db.session,Zipcode,{'zipcode':zipcode})
+
+    d = datetime.today()
+    parse_key = 'showtimes:%s:%s'%(zipcode,'-'.join(str(i) for i in d.isocalendar()))
+    parse = redis.get(parse_key)
+    if parse:
+        parse = json.loads(parse,cls=showtimesparsing.ParseDecoder)
+    else:
+        parse = showtimesparsing.parse_from_flixster(zipcode,date=d)
+        redis.set(parse_key,json.dumps(parse,cls=showtimesparsing.ParseEncoder))
+
+    for theatre in parse['theatres']:
+        venue = get_or_create(db.session,Venue,keys={'name':theatre['name']},additions={'address':theatre['address']},collections={'zipcodes':zip_object})
+        for movie in theatre['movies']:
+            movie_obj = get_or_create(db.session,Movie,{'name':movie['name']})
+            for showtime in movie['showtimes']:
+                showing = get_or_create(db.session,Showing,{'movie':movie_obj.id,'venue':venue.id,'start':showtime['start'],'end':showtime['end']})
+    db.session.commit()
+    return get_venues(zipcode)
+
 
 if DEBUG:
     @app.route('/fixtures')
+    @cache.cached(timeout=15)
     def fixtures():
         if request.args.has_key('drop'):
             db.drop_all()
@@ -101,25 +135,7 @@ if DEBUG:
 
         zipcode = request.args.get('zipcode')
         if zipcode:
-            zip_object = get_or_create(db.session,Zipcode,{'zipcode':zipcode})
-
-            d = datetime.today()
-            parse_key = 'showtimes:%s:%s'%(zipcode,'-'.join(str(i) for i in d.isocalendar()))
-            parse = redis.get(parse_key)
-            if parse:
-                parse = json.loads(parse,cls=showtimesparsing.ParseDecoder)
-            else:
-                parse = showtimesparsing.parse_from_flixster(zipcode,date=d)
-                redis.set(parse_key,json.dumps(parse,cls=showtimesparsing.ParseEncoder))
-
-            for theatre in parse['theatres']:
-                venue = get_or_create(db.session,Venue,keys={'name':theatre['name']},additions={'address':theatre['address']},collections={'zipcodes':zip_object})
-                for movie in theatre['movies']:
-                    movie_obj = get_or_create(db.session,Movie,{'name':movie['name']})
-                    for showtime in movie['showtimes']:
-                        showing = get_or_create(db.session,Showing,{'movie':movie_obj.id,'venue':venue.id,'start':showtime['start'],'end':showtime['end']})
-            db.session.commit()
-            response = {'venues':Venue.query.all()}
+            response = {'venues':get_showtimes_parse(zipcode)}
             return jsonify(response)
 
         else:
