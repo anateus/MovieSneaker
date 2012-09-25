@@ -1,4 +1,4 @@
-from flask import Flask, request, session, Response, render_template, json
+from flask import Flask, request, session, Response, render_template, json, abort
 from redis import Redis, from_url as redis_from_url
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.cache import Cache
@@ -79,13 +79,18 @@ def get_venues(zipcode):
 @app.route('/venues', defaults={'venue':None,'chains':None})
 @app.route('/venues/<venue>',defaults={'chains':None})
 @app.route('/venues/<venue>/chains',defaults={'chains':True})
+@cache.cached(timeout=30)
 def venues(venue,chains):
     if venue:
         current_showings = Showing.query.filter_by(venue=int(venue)).all()
+        if not current_showings:
+            abort(404)
         if chains:
             chain_length = int(request.args.get('length',2))
-            # TODO: limit chain length
-            response = {'chains':sneakercore.find_chains([(s,s.start,s.end) for s in current_showings],chain_length=chain_length)}
+            if chain_length > 4:
+                abort(403)
+            response = {'chain_length':chain_length,
+                        'chains':sneakercore.find_chains([(s,s.start,s.end) for s in current_showings],chain_length=chain_length)}
 
         else:
             response = {'showings':current_showings}
@@ -103,13 +108,13 @@ def venues(venue,chains):
 
     return jsonify(response)
 
-def get_showtimes_parse(zipcode):
+def get_showtimes_parse(zipcode,ignore_cache=False):
     zip_object = get_or_create(db.session,Zipcode,{'zipcode':zipcode})
 
     d = datetime.today()
     parse_key = 'showtimes:%s:%s'%(zipcode,'-'.join(str(i) for i in d.isocalendar()))
     parse = redis.get(parse_key)
-    if parse:
+    if parse and not ignore_cache:
         parse = json.loads(parse,cls=showtimesparsing.ParseDecoder)
     else:
         parse = showtimesparsing.parse_from_flixster(zipcode,date=d)
@@ -118,7 +123,7 @@ def get_showtimes_parse(zipcode):
     for theatre in parse['theatres']:
         venue = get_or_create(db.session,Venue,keys={'name':theatre['name']},additions={'address':theatre['address']},collections={'zipcodes':zip_object})
         for movie in theatre['movies']:
-            movie_obj = get_or_create(db.session,Movie,{'name':movie['name']})
+            movie_obj = get_or_create(db.session,Movie,{'name':movie['name']},additions={'runtime':movie['duration']})
             for showtime in movie['showtimes']:
                 showing = get_or_create(db.session,Showing,{'movie':movie_obj.id,'venue':venue.id,'start':showtime['start'],'end':showtime['end']})
     db.session.commit()
@@ -133,9 +138,11 @@ if DEBUG:
             db.drop_all()
         db.create_all()
 
+        ignore_cache = request.args.has_key('ignore_cache')
+
         zipcode = request.args.get('zipcode')
         if zipcode:
-            response = {'venues':get_showtimes_parse(zipcode)}
+            response = {'venues':get_showtimes_parse(zipcode,ignore_cache)}
             return jsonify(response)
 
         else:

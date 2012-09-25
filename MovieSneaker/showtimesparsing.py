@@ -66,7 +66,7 @@ def parse_from_flixster(zipcode, date=None, BASE_URL="http://igoogle.flixster.co
                         start = datetime.datetime.combine(date,datetime.datetime.strptime(raw_time,"%I:%M%p").time())
                         end = start + duration
                         showtimes.append({"start":start,"end":end})
-                    movies.append({'name':title,'showtimes':showtimes})
+                    movies.append({'name':title,'showtimes':showtimes,'duration':duration.seconds/60})
                 theatres.append({'name':name,'address':address,'movies':movies})
             return { 'theatres': theatres, 'date': date }
 
