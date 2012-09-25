@@ -1,6 +1,7 @@
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask import json
 
+
 from moviesneaker import app
 
 db = SQLAlchemy(app)
@@ -13,6 +14,9 @@ zipcodes = db.Table('zipcodes',
 class Zipcode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     zipcode = db.Column(db.String(60), unique=True)
+
+    def __init__(self,zipcode):
+        self.zipcode = zipcode
 
     def __json__(self):
         return self.zipcode
@@ -40,7 +44,7 @@ class Venue(db.Model):
     zipcodes = db.relationship('Zipcode', secondary=zipcodes, backref=db.backref('venues')) #models.ManyToManyField(ZipCode)
     showings = db.relationship('Showing')
 
-    def __init__(self,name,zipcodes,address=None,description=None,showings=None):
+    def __init__(self,name,zipcodes=None,address=None,description=None,showings=None):
         self.name = name
         if isinstance(zipcodes,list):
             for zipcode in zipcodes:
@@ -69,7 +73,6 @@ class Showing(db.Model):
     def __init__(self,movie,venue,start=None,end=None):
         # this allows passing in either the ids or the objects directly
         self.movie = movie.id if isinstance(movie, Movie) else movie
-        print movie.id, isinstance(movie,Movie)
         self.venue = venue.id if isinstance(venue, Venue) else venue
         self.start = start
         self.end = end
@@ -81,5 +84,41 @@ class Showing(db.Model):
                 'end':self.end}
 
 
-
+def get_or_create(session, model, keys, additions=None, collections=None,overwrite=False):
+    """
+    Gets or creates an object from the database
+    :param session: The session object
+    :type session: flask.ext.sqlalchemy.Session
+    :param model: The model of the object to return
+    :type model: Subclass of flask.ext.sqlalchemy.Model
+    :param keys: What to filter by to find the object
+    :type keys: dict
+    :param additions: Values to add to the returned object
+    :type additions: dict
+    :param overwrite:
+    :type overwrite: boolean
+    :return: The requested object from the DB or a new one
+    :rtype: Subclass of flask.ext.sqlalchemy.Model
+    """
+    instance = session.query(model).filter_by(**keys).first()
+    if instance:
+        if overwrite and additions:
+            for k,v in additions.iteritems():
+                setattr(instance,k,v)
+            session.add(instance)
+            session.commit()
+        return instance
+    else:
+        if additions:
+            keys.update(additions)
+        instance = model(**keys)
+        session.add(instance)
+        session.commit()
+        if collections:
+            for k,v in collections.iteritems():
+                c = getattr(instance,k)
+                c.append(v)
+            session.add(instance)
+            session.commit()
+        return instance
 

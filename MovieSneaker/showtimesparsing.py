@@ -1,5 +1,6 @@
 import lxml.html as html
 import datetime
+import dateutil.parser
 import re
 
 #Here's the format we expect this to return:
@@ -17,7 +18,7 @@ import re
 
 
 
-def FlixsterParser(zipcode, date=None, BASE_URL="http://igoogle.flixster.com/igoogle/showtimes?movie=all&date=%(date)s&postal=%(zipcode)s&submit=Go"):
+def parse_from_flixster(zipcode, date=None, BASE_URL="http://igoogle.flixster.com/igoogle/showtimes?movie=all&date=%(date)s&postal=%(zipcode)s&submit=Go"):
     # The date is in the format: YYYYMMDD, zipcode is: NNNNN
         """
         :param zipcode: The zipcode as a string
@@ -39,7 +40,7 @@ def FlixsterParser(zipcode, date=None, BASE_URL="http://igoogle.flixster.com/igo
                     title_line = movie.cssselect('h3')[0]
                     if len(title_line.getchildren())>1:
                         title = title_line.cssselect('a')[0].attrib['title']
-                        sp = title_line.cssselect('span')[0].text.strip("\n\t -").rsplit('-',1)
+                        sp = title_line.cssselect('span')[0].text.strip("\n\t -").rsplit('- ',1)
 #                        raw_rating = sp[0]
                         if len(sp)>1:
                             raw_duration = sp[1]
@@ -68,3 +69,26 @@ def FlixsterParser(zipcode, date=None, BASE_URL="http://igoogle.flixster.com/igo
                     movies.append({'name':title,'showtimes':showtimes})
                 theatres.append({'name':name,'address':address,'movies':movies})
             return { 'theatres': theatres, 'date': date }
+
+from flask import json
+
+class ParseEncoder(json.JSONEncoder):
+    """
+    Encodes JSON from handling showtimes and whatever other things we decide to add to parser output
+    """
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        return json.JSONEncoder.default(self, obj)
+
+class ParseDecoder(json.JSONDecoder):
+    def decode(self,s):
+        decoded = json.JSONDecoder.decode(self,s)
+        for t in decoded['theatres']:
+            for m in t['movies']:
+                for s in m['showtimes']:
+                    s['start'] = dateutil.parser.parse(s['start'])
+                    s['end'] = dateutil.parser.parse(s['end'])
+        return decoded
+
+

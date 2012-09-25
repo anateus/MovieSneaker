@@ -3,10 +3,11 @@ from redis import Redis, from_url as redis_from_url
 from flask.ext.sqlalchemy import SQLAlchemy
 
 from datetime import datetime, timedelta
-
+import dateutil
 import os
 
 import sneakercore
+import showtimesparsing
 
 ### Some environment setup boilerplate
 
@@ -97,26 +98,51 @@ if DEBUG:
         if request.args.has_key('drop'):
             db.drop_all()
         db.create_all()
-        v = None
-        for i,z in enumerate(('94046','90210','02464'),start=1):
-            zipcode = Zipcode(zipcode=z)
-            db.session.add(zipcode)
-            v = Venue('Theatre %s %d'%(z,i),[zipcode],description="Some movie theatre")
-            db.session.add(v)
 
-        m = Movie(name="Our one movie",runtime=90,description="Fantastic movie")
-        db.session.add(m)
-        db.session.commit()
+        zipcode = request.args.get('zipcode')
+        if zipcode:
+            zip_object = get_or_create(db.session,Zipcode,{'zipcode':zipcode})
 
-        for i in range(10):
-            st = datetime.now()+timedelta(minutes=20*i)
-            en = st+timedelta(minutes=m.runtime)
-            s = Showing(m,v,start=st,end=en)
-            db.session.add(s)
+            d = datetime.today()
+            parse_key = 'showtimes:%s:%s'%(zipcode,'-'.join(str(i) for i in d.isocalendar()))
+            parse = redis.get(parse_key)
+            if parse:
+                parse = json.loads(parse,cls=showtimesparsing.ParseDecoder)
+            else:
+                parse = showtimesparsing.parse_from_flixster(zipcode,date=d)
+                redis.set(parse_key,json.dumps(parse,cls=showtimesparsing.ParseEncoder))
 
-        db.session.commit()
+            for theatre in parse['theatres']:
+                venue = get_or_create(db.session,Venue,keys={'name':theatre['name']},additions={'address':theatre['address']},collections={'zipcodes':zip_object})
+                for movie in theatre['movies']:
+                    movie_obj = get_or_create(db.session,Movie,{'name':movie['name']})
+                    for showtime in movie['showtimes']:
+                        showing = get_or_create(db.session,Showing,{'movie':movie_obj.id,'venue':venue.id,'start':showtime['start'],'end':showtime['end']})
+            db.session.commit()
+            response = {'venues':Venue.query.all()}
+            return jsonify(response)
 
-        return jsonify({"message":"seems to have worked!"})
+        else:
+            v = None
+            for i,z in enumerate(('94046','90210','02464'),start=1):
+                zipcode = Zipcode(zipcode=z)
+                db.session.add(zipcode)
+                v = Venue('Theatre %s %d'%(z,i),[zipcode],description="Some movie theatre")
+                db.session.add(v)
+
+            m = Movie(name="Our one movie",runtime=90,description="Fantastic movie")
+            db.session.add(m)
+            db.session.commit()
+
+            for i in range(10):
+                st = datetime.now()+timedelta(minutes=20*i)
+                en = st+timedelta(minutes=m.runtime)
+                s = Showing(m,v,start=st,end=en)
+                db.session.add(s)
+
+            db.session.commit()
+
+            return jsonify({"message":"seems to have worked!"})
 
 
 
