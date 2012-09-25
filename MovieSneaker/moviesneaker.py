@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 
 import os
 
+import sneakercore
+
 ### Some environment setup boilerplate
 
 try:
@@ -70,11 +72,13 @@ def index():
 def venues(venue,chains):
     if venue:
         current_showings = Showing.query.filter_by(venue=int(venue)).all()
-        response = {'showings':current_showings}
         if chains:
             chain_length = int(request.args.get('length',2))
             # TODO: limit chain length
-            response['chains']="chains of max length %d will go here"%chain_length
+            response = {'chains':sneakercore.find_chains([(s,s.start,s.end) for s in current_showings],chain_length=chain_length)}
+
+        else:
+            response = {'showings':current_showings}
     else:
         zipcode = request.args.get('zipcode')
         if zipcode:
