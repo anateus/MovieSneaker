@@ -13,6 +13,7 @@ class Zipcode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     zipcode = db.Column(db.String(60), unique=True)
 
+
 class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256))
@@ -39,3 +40,10 @@ class Showing(db.Model):
     venue = db.Column(db.Integer, db.ForeignKey('venue.id'))
     start = db.Column(db.DateTime)
     end = db.Column(db.DateTime)
+
+    def __init__(self,movie,venue,start=None,end=None):
+        # this allows passing in either the ids or the objects directly
+        self.movie = movie.id if type(movie) is Movie else movie
+        self.venue = venue.id if type(venue) is Venue else venue
+        self.start = start
+        self.end = end
