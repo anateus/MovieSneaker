@@ -63,29 +63,29 @@ def jsonify(payload,cls=SchemaEncoder):
 def index():
     return 'Even Gooder News Everyone!'
 
-# TODO: redo the structure so that it's /venues/<venue> return showtimes and you do /venues/?zipcode=zipcode
 
-@app.route('/venues', defaults={'zipcode':None})
-@app.route('/venues/', defaults={'zipcode':None})
-@app.route('/venues/<zipcode>')
-def venues(zipcode):
-    if zipcode:
-        matching_venues = Venue.query.join(Venue.zipcodes).filter(Zipcode.zipcode==zipcode.strip()).all()
+@app.route('/venues', defaults={'venue':None,'chains':None})
+@app.route('/venues/<venue>',defaults={'chains':None})
+@app.route('/venues/<venue>/chains',defaults={'chains':True})
+def venues(venue,chains):
+    if venue:
+        current_showings = Showing.query.filter_by(venue=int(venue)).all()
+        response = {'showings':current_showings}
+        if chains:
+            chain_length = int(request.args.get('length',2))
+            # TODO: limit chain length
+            response['chains']="chains of max length %d will go here"%chain_length
     else:
-        matching_venues = Venue.query.all()
-#    if not matching_venues:
-#        response = { 'error' }
-    response = { 'venues' : matching_venues }
+        zipcode = request.args.get('zipcode')
+        if zipcode:
+            matching_venues = Venue.query.join(Venue.zipcodes).filter(Zipcode.zipcode==zipcode.strip()).all()
+            response = { 'venues' : matching_venues }
+        else:
+            matching_venues = Venue.query.all()
+            response = { 'venues' : matching_venues }
+
     return jsonify(response)
 
-@app.route('/showings',defaults={'venue':None})
-@app.route('/showings/<venue>')
-def showings(venue):
-    if not venue:
-        current_showings = Showing.query.all()
-    else:
-        current_showings = Showing.query.filter_by(venue=int(venue)).all()
-    return jsonify({'showings':current_showings})
 
 if DEBUG:
     @app.route('/fixtures')

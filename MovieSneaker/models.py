@@ -26,6 +26,9 @@ class Movie(db.Model):
     notes = db.Column(db.String(1024))
     showings = db.relationship('Showing')
 
+    def __json__(self):
+        return {'id':self.id,'name':self.name,'runtime':self.runtime,'description':self.description}
+
 
 class Venue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -54,7 +57,7 @@ class Venue(db.Model):
                     self.showings.append(showing)
 
     def __json__(self):
-        return {'name':str(self.name),'description':self.description,'zipcodes':self.zipcodes}
+        return {'id':self.id,'name':str(self.name),'description':self.description,'zipcodes':self.zipcodes}
 
 class Showing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -72,7 +75,7 @@ class Showing(db.Model):
         self.end = end
 
     def __json__(self):
-        return {'movie':self.movie,
+        return {'movie':Movie.query.filter_by(id=self.movie).one(),
                 'venue':self.venue,
                 'start':self.start,
                 'end':self.end}
