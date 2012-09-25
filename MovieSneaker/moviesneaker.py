@@ -1,6 +1,7 @@
 from flask import Flask, request, session, Response, render_template, json, jsonify
-from redis import Redis
-from redis import from_url as redis_from_url
+from redis import Redis, from_url as redis_from_url
+from flask.ext.sqlalchemy import SQLAlchemy
+
 
 import os
 
@@ -8,6 +9,10 @@ try:
     from . import app
 except ValueError: # we're debugging
     app = Flask(__name__)
+app.config.from_pyfile('moviesneaker.cfg')
+db = SQLAlchemy(app)
+
+from models import *
 
 if os.path.exists('/home/dotcloud/environment.json'):
     with open('/home/dotcloud/environment.json') as f:
