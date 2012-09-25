@@ -33,7 +33,6 @@ class Venue(db.Model):
     zipcodes = db.relation('Zipcode', secondary=zipcodes, backref=db.backref('venues')) #models.ManyToManyField(ZipCode)
     showings = db.relationship('Showing')
 
-
 class Showing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     movie = db.Column(db.Integer, db.ForeignKey('movie.id'))

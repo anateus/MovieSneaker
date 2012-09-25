@@ -29,5 +29,23 @@ else: # we're debugging
 def index():
     return 'Even Gooder News Everyone!'
 
+def venues_dict(vs):
+    return [{'name':str(v.name)} for v in vs]
+
+@app.route('/venues', defaults={'zipcode':None})
+@app.route('/venues/', defaults={'zipcode':None})
+@app.route('/venues/<zipcode>')
+def venues(zipcode):
+    if zipcode:
+        matching_venues = venues_dict(Venue.query.join(Venue.zipcodes).filter(Zipcode.zipcode==zipcode.strip()).all())
+    else:
+        matching_venues = venues_dict(Venue.query.all())
+#    if not matching_venues:
+#        response = { 'error' }
+    response = { 'venues' : matching_venues }
+    return jsonify(response)
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
