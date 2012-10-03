@@ -1,5 +1,6 @@
 from flask import Flask, request, session, Response, render_template, json, abort
 from redis import Redis, from_url as redis_from_url
+from rq import Queue
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.cache import Cache
 
@@ -33,6 +34,8 @@ if env:
     redis = redis_from_url(env["DOTCLOUD_DATA_REDIS_URL"])
 else: # we're debugging
     redis = Redis()
+
+showtime_parse_queue = Queue('showtime_parse',redis)
 
 rp = redis.connection_pool.connection_kwargs
 cache = Cache(app,config={'CACHE_TYPE':'redis',
