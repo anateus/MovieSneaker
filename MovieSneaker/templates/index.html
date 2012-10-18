@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% include "zipcode_form.html" %}
+    <div id="site_description" class="row eight columns centered">
+        <h5>We're gonna help you find chains of movies that are back to back (or ever so slightly overlapping) at a movie theater of your choice.</h5>
+    </div>
+    <br/>
+    <div id="zipcode_form" class="row panel eight columns centered">
+    {% include "zipcode_form.html" %}
+    </div>
+    <div id="theatre_selection" class="row panel eight columns centered hidden">
+        <ol id="theatre_list">
+
+        </ol>
+    </div>
+    <div id="chains_display" class="row panel eight columns centered hidden">
+    </div>
 {% endblock %}
 

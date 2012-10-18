@@ -1,15 +1,14 @@
-<div class="row panel eight columns centered">
     <div class="five columns centered">
         {#        <h3>Enter Zipcode:</h3>#}
         <div class="row collapse">
             <div class="eight columns">
-                <input type="text" placeholder="Enter Zipcode"  />
+                <input id="zipcode_box" type="text" placeholder="Enter Zipcode"  />
+                <small id="zipcode_error" class="hidden error">Probably not a US zipcode</small>
             </div>
 
             <div class="four columns">
-                <a href="#" class="postfix regular button expand">List Theatres</a>
+                <a href="#" id = "list_theatres_button" class="postfix regular button expand">List Theatres</a>
             </div>
         </div>
 
     </div>
-</div>

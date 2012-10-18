@@ -43,6 +43,41 @@
     });
   }
 
-  var Movie = Backbone.Model.extend();
+    var zipcode_pattern = /^\d{5}(-\d{4})?$/;
+
+    $('#list_theatres_button').click(function(){
+        var zipcode = $('#zipcode_box').val();
+        if (zipcode_pattern.test(zipcode)) {
+            $('#zipcode_error').addClass('hidden');
+            $('#zipcode_box').removeClass('error');
+
+            zipcode = zipcode.split('-')[0];
+
+            $.ajax({
+                url      : '/api/v1/venues',
+                type     : 'GET',
+                data     : { zipcode : zipcode },
+                dataType : 'json',
+                success  : function (data, textStatus, jqXHR) {
+                    var venue;
+                    for (venue in data["venues"]) {
+                        $('#theatre_list')
+
+                    }
+
+                }
+            })
+        } else {
+            $('#zipcode_error').removeClass('hidden');
+            $('#zipcode_box').addClass('error');
+
+        }
+
+
+
+})
+
+
+
 
 })(jQuery, this);
