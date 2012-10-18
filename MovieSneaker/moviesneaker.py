@@ -73,7 +73,9 @@ def jsonify(payload,cls=SchemaEncoder):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    zipcode = request.args.get('zipcode')
+    # TODO: if we have a zipcode just render
+    return render_template('base.html')
 
 def get_venues(zipcode):
     return Venue.query.join(Venue.zipcodes).filter(Zipcode.zipcode==zipcode.strip()).all()
