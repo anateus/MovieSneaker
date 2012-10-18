@@ -43,4 +43,6 @@
     });
   }
 
+  var Movie = Backbone.Model.extend();
+
 })(jQuery, this);

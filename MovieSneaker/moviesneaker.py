@@ -65,7 +65,7 @@ def jsonify(payload,cls=SchemaEncoder):
     :return: The serialized json
     :rtype: str
     """
-    return app.response_class(json.dumps(dict(payload),
+    return app.response_class(json.dumps(payload,
                                          indent=None if request.is_xhr else 2,cls=cls), mimetype='application/json')
 
 
@@ -75,15 +75,15 @@ def jsonify(payload,cls=SchemaEncoder):
 def index():
     zipcode = request.args.get('zipcode')
     # TODO: if we have a zipcode just render
-    return render_template('base.html')
+    return render_template('index.html')
 
 def get_venues(zipcode):
     return Venue.query.join(Venue.zipcodes).filter(Zipcode.zipcode==zipcode.strip()).all()
 
 
-@app.route('/venues', defaults={'venue':None,'chains':None})
-@app.route('/venues/<venue>',defaults={'chains':None})
-@app.route('/venues/<venue>/chains',defaults={'output_chains':True})
+@app.route('/api/v1/venues', defaults={'venue':None,'output_chains':None})
+@app.route('/api/v1/venues/<venue>',defaults={'output_chains':None})
+@app.route('/api/v1/venues/<venue>/chains',defaults={'output_chains':True})
 #@cache.cached(timeout=30)
 def venues(venue,output_chains):
     if venue:
@@ -113,6 +113,10 @@ def venues(venue,output_chains):
             response = { 'venues' : matching_venues }
 
     return jsonify(response)
+
+@app.route('/api/v1/movie/<movie_id>')
+def movie(movie_id):
+    return jsonify(Movie.query.filter_by(id=movie_id).one())
 
 def get_showtimes_parse(zipcode,ignore_cache=False):
     zip_object = get_or_create(db.session,Zipcode,{'zipcode':zipcode})

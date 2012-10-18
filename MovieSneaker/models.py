@@ -6,12 +6,13 @@ from moviesneaker import app
 
 db = SQLAlchemy(app)
 
-zipcodes = db.Table('zipcodes',
-                    db.Column('zipcode_id',db.Integer, db.ForeignKey('zipcode.id')),
-                    db.Column('venue_id', db.Integer, db.ForeignKey('venue.id'))
+zipcodes = db.Table('zipcode_venue_map',
+                    db.Column('zipcode_id',db.Integer, db.ForeignKey('zipcodes.id')),
+                    db.Column('venue_id', db.Integer, db.ForeignKey('venues.id'))
 )
 
 class Zipcode(db.Model):
+    __tablename__ = "zipcodes"
     id = db.Column(db.Integer, primary_key=True)
     zipcode = db.Column(db.String(60), unique=True)
 
@@ -23,6 +24,7 @@ class Zipcode(db.Model):
 
 
 class Movie(db.Model):
+    __tablename__ = "movies"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256))
     runtime = db.Column(db.Integer) # in minutes
@@ -35,6 +37,7 @@ class Movie(db.Model):
 
 
 class Venue(db.Model):
+    __tablename__ = "venues"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256))
     address = db.Column(db.String(512))
@@ -65,8 +68,8 @@ class Venue(db.Model):
 
 class Showing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    movie = db.Column(db.Integer, db.ForeignKey('movie.id'))
-    venue = db.Column(db.Integer, db.ForeignKey('venue.id'))
+    movie = db.Column(db.Integer, db.ForeignKey('movies.id'))
+    venue = db.Column(db.Integer, db.ForeignKey('venues.id'))
     start = db.Column(db.DateTime)
     end = db.Column(db.DateTime)
 
