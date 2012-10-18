@@ -35,7 +35,7 @@ if env:
 else: # we're debugging
     redis = Redis()
 
-showtime_parse_queue = Queue('showtime_parse',redis)
+showtime_parse_queue = Queue('showtime_parse',connection=redis)
 
 rp = redis.connection_pool.connection_kwargs
 cache = Cache(app,config={'CACHE_TYPE':'redis',
@@ -73,7 +73,7 @@ def jsonify(payload,cls=SchemaEncoder):
 
 @app.route('/')
 def index():
-    return 'Even Gooder News Everyone!'
+    return render_template('index.html')
 
 def get_venues(zipcode):
     return Venue.query.join(Venue.zipcodes).filter(Zipcode.zipcode==zipcode.strip()).all()
@@ -81,19 +81,20 @@ def get_venues(zipcode):
 
 @app.route('/venues', defaults={'venue':None,'chains':None})
 @app.route('/venues/<venue>',defaults={'chains':None})
-@app.route('/venues/<venue>/chains',defaults={'chains':True})
-@cache.cached(timeout=30)
-def venues(venue,chains):
+@app.route('/venues/<venue>/chains',defaults={'output_chains':True})
+#@cache.cached(timeout=30)
+def venues(venue,output_chains):
     if venue:
         current_showings = Showing.query.filter_by(venue=int(venue)).all()
         if not current_showings:
             abort(404)
-        if chains:
+        if output_chains:
             chain_length = int(request.args.get('length',2))
             if chain_length > 4:
                 abort(403)
+            chains = sneakercore.find_chains([(s,s.start,s.end) for s in current_showings],chain_length=chain_length)
             response = {'chain_length':chain_length,
-                        'chains':sneakercore.find_chains([(s,s.start,s.end) for s in current_showings],chain_length=chain_length)}
+                        'chains':chains}
 
         else:
             response = {'showings':current_showings}

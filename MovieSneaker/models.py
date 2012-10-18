@@ -61,7 +61,7 @@ class Venue(db.Model):
                     self.showings.append(showing)
 
     def __json__(self):
-        return {'id':self.id,'name':str(self.name),'address':self.address,'description':self.description,'zipcodes':self.zipcodes}
+        return {'id':self.id,'name':self.name.encode('utf8'),'address':self.address,'description':self.description,'zipcodes':self.zipcodes}
 
 class Showing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
