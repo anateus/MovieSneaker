@@ -16,7 +16,7 @@ import showtimesparsing
 try:
     from . import app
 except ValueError: # we're debugging
-    app = Flask(__name__)
+    app = Flask(__name__,static_folder="../static")
 app.config.from_pyfile('moviesneaker.cfg')
 db = SQLAlchemy(app)
 

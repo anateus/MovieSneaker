@@ -113,6 +113,7 @@
     </div> 
   </footer>
 
+ {#
   <!-- Included JS Files (Uncompressed) -->
   <!--
   
@@ -141,15 +142,31 @@
   <script src="/static/javascripts/jquery.foundation.topbar.js"></script>
   
   -->
+  #}
   
   <!-- Included JS Files (Compressed) -->
   <script src="/static/javascripts/jquery.js"></script>
+
   <script src="/static/javascripts/foundation.min.js"></script>
   <script src="/static/javascripts/json2-min.js"></script>
   <script src="/static/javascripts/underscore-min.js"></script>
-{#  <script src="/static/javascripts/backbone-min.js"></script>#}
+  <script src="/static/javascripts/mustache.js"></script>
+  <script src="/static/javascripts/backbone-min.js"></script>
 
   <!-- Initialize JS Plugins -->
   <script src="/static/javascripts/app.js"></script>
+{#
+    <script type="text/javascript">
+        head.js("/static/javascripts/jquery.js",
+                "/static/javascripts/foundation.min.js",
+                "/static/javascripts/json2-min.js",
+                "/static/javascripts/underscore-min.js",
+                "/static/javascripts/backbone-min.js");
+        head.js("/static/javascripts/jquery.mustache.js");
+
+        head.js("/static/javascripts/app.js");
+    </script> #}
+
+
 </body>
 </html>
